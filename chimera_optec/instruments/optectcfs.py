@@ -25,7 +25,7 @@ import time
 import threading
 
 from chimera.interfaces.focuser import (InvalidFocusPositionException,
-                                        FocuserFeature)
+                                        FocuserFeature, FocuserAxis)
 
 from chimera.instruments.focuser import FocuserBase
 
@@ -59,7 +59,13 @@ class OptecTCFS (FocuserBase):
 
         self._supports = {FocuserFeature.TEMPERATURE_COMPENSATION: True,
                           FocuserFeature.POSITION_FEEDBACK: True,
-                          FocuserFeature.ENCODER: True}
+                          FocuserFeature.ENCODER: True,
+                          FocuserFeature.CONTROLLABLE_X: False,
+                          FocuserFeature.CONTROLLABLE_Y: False,
+                          FocuserFeature.CONTROLLABLE_Z: True,
+                          FocuserFeature.CONTROLLABLE_U: False,
+                          FocuserFeature.CONTROLLABLE_V: False,
+                          FocuserFeature.CONTROLLABLE_W: False}
 
         # debug log
         self._debugLog = None
@@ -129,15 +135,23 @@ class OptecTCFS (FocuserBase):
             return -300
 
     @lock
-    def moveIn(self, n):
+    def moveIn(self, n, axis=FocuserAxis.Z):
+        # Check if axis is on the permitted axis list
+        self._checkAxis(axis)
+
         return self._move(Direction.IN, n)
 
     @lock
-    def moveOut(self, n):
+    def moveOut(self, n, axis=FocuserAxis.Z):
+        # Check if axis is on the permitted axis list
+        self._checkAxis(axis)
+
         return self._move(Direction.OUT, n)
 
     @lock
-    def moveTo(self, position):
+    def moveTo(self, position, axis=FocuserAxis.Z):
+        # Check if axis is on the permitted axis list
+        self._checkAxis(axis)
 
         current = self.getPosition()
 
@@ -206,7 +220,9 @@ class OptecTCFS (FocuserBase):
         return True
 
     @lock
-    def getPosition(self):
+    def getPosition(self, axis=FocuserAxis.Z):
+        # Check if axis is on the permitted axis list
+        self._checkAxis(axis)
 
         cmd = "FPOSRO"
 
@@ -228,7 +244,10 @@ class OptecTCFS (FocuserBase):
             raise IOError(
                 "Error getting focuser position. Invalid position returned '%s'" % ack)
 
-    def getRange(self):
+    def getRange(self, axis=FocuserAxis.Z):
+        # Check if axis is on the permitted axis list
+        self._checkAxis(axis)
+
         return 0, 7000
 
     def _setMode(self, mode):
